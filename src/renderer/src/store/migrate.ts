@@ -10,6 +10,7 @@ import { isEmpty } from 'lodash'
 import { createMigrate } from 'redux-persist'
 
 import { RootState } from '.'
+import { moveProvider } from './llm'
 import { DEFAULT_SIDEBAR_ICONS } from './settings'
 
 // remove logo base64 data to reduce the size of the state
@@ -834,8 +835,6 @@ const migrateConfig = {
       })
     }
 
-    removeMiniAppIconsFromState(state)
-
     state.llm.providers.forEach((provider) => {
       if (provider.id === 'qwenlm') {
         provider.type = 'qwenlm'
@@ -875,7 +874,6 @@ const migrateConfig = {
         state.minapps.enabled.push(flowith)
       }
     }
-    removeMiniAppIconsFromState(state)
     return state
   },
   '60': (state: RootState) => {
@@ -1211,6 +1209,49 @@ const migrateConfig = {
       apiKey: '',
       apiHost: 'https://api.lkeap.cloud.tencent.com',
       models: SYSTEM_MODELS['tencent-cloud-ti'],
+      isSystem: true,
+      enabled: false
+    })
+    return state
+  },
+  '77': (state: RootState) => {
+    if (state.websearch) {
+      if (!state.websearch.providers.find((p) => p.id === 'searxng')) {
+        state.websearch.providers.push(
+          {
+            id: 'searxng',
+            name: 'Searxng',
+            apiHost: ''
+          },
+          {
+            id: 'exa',
+            name: 'Exa',
+            apiKey: ''
+          }
+        )
+      }
+      state.websearch.providers.forEach((p) => {
+        // @ts-ignore eslint-disable-next-line
+        delete p.enabled
+      })
+    }
+
+    return state
+  },
+  '78': (state: RootState) => {
+    state.llm.providers = moveProvider(state.llm.providers, 'ppio', 9)
+    state.llm.providers = moveProvider(state.llm.providers, 'infini', 10)
+    removeMiniAppIconsFromState(state)
+    return state
+  },
+  '79': (state: RootState) => {
+    state.llm.providers.push({
+      id: 'gpustack',
+      name: 'GPUStack',
+      type: 'openai',
+      apiKey: '',
+      apiHost: '',
+      models: SYSTEM_MODELS.gpustack,
       isSystem: true,
       enabled: false
     })
